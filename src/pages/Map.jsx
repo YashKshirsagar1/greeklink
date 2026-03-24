@@ -16,15 +16,20 @@ const LOCATION_TYPES = {
   main: { color: '#D4AF37', label: 'Chapter house', symbol: 'Σ' },
   offcampus: { color: '#4A9EFF', label: 'Off-campus', symbol: 'H' },
   dorm: { color: '#888780', label: 'Dorm', symbol: 'D' },
-  custom: { color: '#A78BFA', label: 'Custom', symbol: '★' },
+  custom: { color: '#A78BFA', label: 'Custom pin', symbol: '★' },
   bar: { color: '#F97316', label: 'Bar / venue', symbol: 'B' },
   food: { color: '#22C55E', label: 'Food', symbol: 'F' },
+  building: { color: '#E2E8F0', label: 'Building / landmark', symbol: '🏛' },
+  parking: { color: '#94A3B8', label: 'Parking', symbol: 'P' },
+  gym: { color: '#F43F5E', label: 'Gym / rec', symbol: 'G' },
+  library: { color: '#818CF8', label: 'Library / study', symbol: 'L' },
 }
 
 const MAP_CENTER = [40.4444, -79.9428]
 
 function createLocationIcon(type) {
   const t = LOCATION_TYPES[type] || LOCATION_TYPES.custom
+  const isEmoji = [...t.symbol].length === 2
   return L.divIcon({
     className: '',
     html: `<div style="
@@ -35,7 +40,7 @@ function createLocationIcon(type) {
       display:flex;align-items:center;justify-content:center;
       box-shadow:0 4px 14px rgba(0,0,0,0.8), 0 0 0 3px white;
       border:2px solid rgba(255,255,255,0.9);
-    "><span style="transform:rotate(45deg);color:white;font-size:15px;font-weight:900;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5)">${t.symbol}</span></div>`,
+    "><span style="transform:rotate(45deg);color:${isEmoji ? 'black' : 'white'};font-size:${isEmoji ? '16px' : '15px'};font-weight:900;line-height:1">${t.symbol}</span></div>`,
     iconSize: [40, 40],
     iconAnchor: [20, 40],
     popupAnchor: [0, -42],

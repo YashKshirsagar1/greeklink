@@ -20,6 +20,7 @@ export default function Layout() {
   const location = useLocation()
   const { user } = useAuth()
   const [memberCount, setMemberCount] = useState(0)
+  const [myMember, setMyMember] = useState(null)
 
   useEffect(() => {
     async function getCount() {
@@ -31,9 +32,27 @@ export default function Layout() {
     getCount()
   }, [])
 
+  useEffect(() => {
+    async function fetchMe() {
+      if (!user) return
+      const { data } = await supabase
+        .from('members')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+      setMyMember(data)
+    }
+    fetchMe()
+  }, [user])
+
+  const initials = user?.user_metadata?.full_name
+    ? user.user_metadata.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'U'
+
   return (
     <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
       <aside className="w-52 min-w-[208px] bg-gray-900 border-r border-gray-800 flex flex-col overflow-y-auto">
+
         <div className="p-4 border-b border-gray-800">
           <div className="text-yellow-400 font-bold text-xl tracking-tight">GreekLink</div>
           <div className="text-gray-500 text-xs mt-0.5 uppercase tracking-widest">Chapter OS</div>
@@ -66,13 +85,29 @@ export default function Layout() {
           })}
         </nav>
 
+        {/* Footer with admin badge */}
         <div className="p-3 border-t border-gray-800 flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-yellow-400/10 border border-yellow-400/30 flex items-center justify-center text-yellow-400 text-xs font-bold">
-            {user?.user_metadata?.full_name?.[0] || 'U'}
+          <div className="relative flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-yellow-400/10 border border-yellow-400/30 flex items-center justify-center text-yellow-400 text-xs font-bold">
+              {initials}
+            </div>
+            {myMember?.is_admin && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-400 flex items-center justify-center">
+                <span className="text-gray-900 font-black" style={{ fontSize: '8px' }}>A</span>
+              </div>
+            )}
           </div>
+
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-white truncate">
-              {user?.user_metadata?.full_name || user?.email}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className="text-sm font-medium text-white truncate">
+                {user?.user_metadata?.full_name || user?.email}
+              </div>
+              {myMember?.is_admin && (
+                <span className="text-xs bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 px-1.5 py-0.5 rounded font-medium flex-shrink-0">
+                  Admin
+                </span>
+              )}
             </div>
             <button
               onClick={() => supabase.auth.signOut()}
@@ -82,6 +117,7 @@ export default function Layout() {
             </button>
           </div>
         </div>
+
       </aside>
 
       <main className="flex-1 overflow-y-auto bg-gray-950">
