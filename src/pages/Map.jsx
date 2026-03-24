@@ -27,15 +27,7 @@ function createLocationIcon(type) {
   const t = LOCATION_TYPES[type] || LOCATION_TYPES.custom
   return L.divIcon({
     className: '',
-    html: `<div style="
-      width:36px;height:36px;
-      background:${t.color};
-      border-radius:50% 50% 50% 0;
-      transform:rotate(-45deg);
-      display:flex;align-items:center;justify-content:center;
-      box-shadow:0 3px 10px rgba(0,0,0,0.5);
-      border:2px solid rgba(255,255,255,0.4);
-    "><span style="transform:rotate(45deg);color:white;font-size:13px;font-weight:700;line-height:1">${t.symbol}</span></div>`,
+    html: `<div style="width:36px;height:36px;background:${t.color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.4)"><span style="transform:rotate(45deg);color:white;font-size:13px;font-weight:700;line-height:1">${t.symbol}</span></div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 36],
     popupAnchor: [0, -38],
@@ -43,44 +35,34 @@ function createLocationIcon(type) {
 }
 
 function createMemberIcon(initials, colorClass, isMe) {
-  const hexMap = {
-    yellow: '#D4AF37', green: '#22C55E', blue: '#4A9EFF',
-    purple: '#A78BFA', red: '#EF4444', cyan: '#22D3EE',
-  }
+  const hexMap = { yellow: '#D4AF37', green: '#22C55E', blue: '#4A9EFF', purple: '#A78BFA', red: '#EF4444', cyan: '#22D3EE' }
   const hex = Object.entries(hexMap).find(([k]) => colorClass.includes(k))?.[1] || '#4A9EFF'
   return L.divIcon({
     className: '',
-    html: `<div style="
-      width:38px;height:38px;
-      background:${hex}25;
-      border:2.5px solid ${isMe ? '#D4AF37' : '#22C55E'};
-      border-radius:50%;
-      display:flex;align-items:center;justify-content:center;
-      font-size:11px;font-weight:700;color:${hex};
-      box-shadow:0 3px 10px rgba(0,0,0,0.5);
-      font-family:sans-serif;
-      position:relative;
-    ">
-      ${initials}
-      <div style="
-        position:absolute;bottom:-1px;right:-1px;
-        width:11px;height:11px;
-        background:#22C55E;border-radius:50%;
-        border:2px solid #0D0C10;
-      "></div>
-    </div>`,
+    html: `<div style="width:38px;height:38px;background:${hex}25;border:2.5px solid ${isMe ? '#D4AF37' : '#22C55E'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${hex};box-shadow:0 3px 10px rgba(0,0,0,0.5);font-family:sans-serif;position:relative">${initials}<div style="position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;background:#22C55E;border-radius:50%;border:2px solid #0D0C10"></div></div>`,
     iconSize: [38, 38],
     iconAnchor: [19, 19],
     popupAnchor: [0, -24],
   })
 }
 
-function MapClickHandler({ addingPin, onMapClick }) {
-  useMapEvents({
-    click: (e) => {
-      if (addingPin) onMapClick(e.latlng.lat, e.latlng.lng)
+function MapEvents({ addingPin, onMapClick }) {
+  const map = useMapEvents({
+    click(e) {
+      if (addingPin) {
+        onMapClick(e.latlng.lat, e.latlng.lng)
+      }
     }
   })
+
+  useEffect(() => {
+    if (addingPin) {
+      map.getContainer().style.cursor = 'crosshair'
+    } else {
+      map.getContainer().style.cursor = ''
+    }
+  }, [addingPin, map])
+
   return null
 }
 
@@ -143,22 +125,41 @@ export default function Map() {
   }
 
   async function toggleSharing() {
-    if (!myMember) return
+    if (!myMember) {
+      alert('Your account is not linked to a member profile yet. Please contact your admin.')
+      return
+    }
+
     if (!sharing) {
       setLocationStatus('requesting')
-      if (!navigator.geolocation) { setLocationStatus('error'); return }
+
+      if (!navigator.geolocation) {
+        setLocationStatus('error')
+        alert('Geolocation is not supported by your browser.')
+        return
+      }
+
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const { latitude, longitude } = pos.coords
-          await supabase.from('members').update({
+          const { error } = await supabase.from('members').update({
             location_sharing: true,
             latitude,
             longitude,
             location_updated_at: new Date().toISOString(),
           }).eq('id', myMember.id)
+
+          if (error) {
+            console.error('Supabase error:', error)
+            alert('Failed to save location: ' + error.message)
+            setLocationStatus('idle')
+            return
+          }
+
           setSharing(true)
           setLocationStatus('active')
-          toast('Location sharing on — your pin is live!')
+          toast('Location sharing on!')
+
           watchRef.current = navigator.geolocation.watchPosition(
             async (pos) => {
               await supabase.from('members').update({
@@ -167,20 +168,28 @@ export default function Map() {
                 location_updated_at: new Date().toISOString(),
               }).eq('id', myMember.id)
             },
-            null,
+            (err) => console.error('Watch error:', err),
             { enableHighAccuracy: true, maximumAge: 15000 }
           )
         },
-        () => {
+        (err) => {
           setLocationStatus('denied')
-          alert('Location denied. Click the lock icon in the address bar → Site settings → Allow Location.')
+          if (err.code === 1) {
+            alert('Location permission denied.\n\nTo fix: click the lock icon 🔒 in your browser address bar → Site settings → Location → Allow → refresh the page.')
+          } else if (err.code === 2) {
+            alert('Location unavailable. Make sure location services are enabled on your device.')
+          } else {
+            alert('Location request timed out. Please try again.')
+          }
         },
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       )
     } else {
       if (watchRef.current) navigator.geolocation.clearWatch(watchRef.current)
       await supabase.from('members').update({
-        location_sharing: false, latitude: null, longitude: null,
+        location_sharing: false,
+        latitude: null,
+        longitude: null,
       }).eq('id', myMember.id)
       setSharing(false)
       setLocationStatus('idle')
@@ -190,8 +199,8 @@ export default function Map() {
 
   function handleMapClick(lat, lng) {
     setPendingLatLng({ lat, lng })
-    setShowAddPin(true)
     setAddingPin(false)
+    setShowAddPin(true)
   }
 
   async function savePin() {
@@ -251,7 +260,7 @@ export default function Map() {
         </div>
         {isAdmin && (
           <button
-            onClick={() => setAddingPin(!addingPin)}
+            onClick={() => setAddingPin(v => !v)}
             className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all
               ${addingPin
                 ? 'bg-yellow-400 text-gray-900 border-yellow-400'
@@ -269,8 +278,9 @@ export default function Map() {
       )}
 
       {addingPin && (
-        <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-xl px-4 py-3 mb-4 text-sm text-yellow-400">
-          📍 Click anywhere on the map to drop a pin
+        <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-xl px-4 py-3 mb-4 text-sm text-yellow-400 flex items-center justify-between">
+          <span>📍 Click anywhere on the map to drop a pin</span>
+          <button onClick={() => setAddingPin(false)} className="text-yellow-400/60 hover:text-yellow-400 ml-4">Cancel</button>
         </div>
       )}
 
@@ -281,10 +291,12 @@ export default function Map() {
             <div className="mb-3">
               <label className="text-xs text-gray-400 mb-1 block">Name</label>
               <input
+                autoFocus
                 className="w-full bg-gray-800 text-white text-sm rounded-lg px-3 py-2.5 border border-gray-700 outline-none focus:border-yellow-400/50"
                 placeholder="e.g. Jake's apartment"
                 value={newPin.name}
                 onChange={e => setNewPin({ ...newPin, name: e.target.value })}
+                onKeyDown={e => e.key === 'Enter' && savePin()}
               />
             </div>
             <div className="mb-3">
@@ -338,15 +350,15 @@ export default function Map() {
               center={MAP_CENTER}
               zoom={15}
               style={{ height: '100%', width: '100%' }}
-              className="z-0"
             >
               <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://carto.com/">CARTO</a>'
               />
-              <MapClickHandler addingPin={addingPin} onMapClick={handleMapClick} />
 
-              {locations.map(loc => (
+              <MapEvents addingPin={addingPin} onMapClick={handleMapClick} />
+
+              {locations.map(loc =>
                 loc.latitude && loc.longitude ? (
                   <Marker
                     key={loc.id}
@@ -357,20 +369,20 @@ export default function Map() {
                       <div style={{ fontFamily: 'sans-serif', minWidth: '140px' }}>
                         <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '4px' }}>{loc.name}</div>
                         {loc.address && <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>📍 {loc.address}</div>}
-                        <div style={{ fontSize: '11px', color: '#aaa' }}>{LOCATION_TYPES[loc.type]?.label}</div>
+                        <div style={{ fontSize: '11px', color: '#aaa', marginBottom: '6px' }}>{LOCATION_TYPES[loc.type]?.label}</div>
                         {isAdmin && (
                           <button
                             onClick={() => deletePin(loc.id)}
-                            style={{ marginTop: '8px', fontSize: '11px', color: '#ef4444', background: 'none', border: '1px solid #ef444440', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                            style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: '1px solid #ef444440', padding: '3px 10px', borderRadius: '4px', cursor: 'pointer' }}
                           >
-                            Remove
+                            Remove pin
                           </button>
                         )}
                       </div>
                     </Popup>
                   </Marker>
                 ) : null
-              ))}
+              )}
 
               {sharingMembers.map(m => (
                 <Marker
@@ -381,9 +393,9 @@ export default function Map() {
                   <Popup>
                     <div style={{ fontFamily: 'sans-serif', minWidth: '140px' }}>
                       <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '2px' }}>
-                        {m.name} {m.user_id === user?.id ? '(you)' : ''}
+                        {m.name}{m.user_id === user?.id ? ' (you)' : ''}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>{m.role}</div>
+                      <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>{m.role}</div>
                       <div style={{ fontSize: '11px', color: '#22c55e' }}>● Live location</div>
                       <div style={{ fontSize: '10px', color: '#aaa', marginTop: '2px' }}>
                         Updated {getTimeAgo(m.location_updated_at)}
@@ -448,6 +460,7 @@ export default function Map() {
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${sharing ? 'left-5' : 'left-1'}`}></div>
               </button>
             </div>
+
             <div className={`mt-3 text-xs px-3 py-2 rounded-lg ${
               locationStatus === 'active' ? 'bg-green-400/10 text-green-400' :
               locationStatus === 'requesting' ? 'bg-yellow-400/10 text-yellow-400' :
@@ -456,12 +469,19 @@ export default function Map() {
             }`}>
               {locationStatus === 'active' ? '● Live — your pin is on the map' :
                locationStatus === 'requesting' ? '⏳ Requesting GPS...' :
-               locationStatus === 'denied' ? '✕ Denied — check browser settings' :
+               locationStatus === 'denied' ? '✕ Location denied' :
                '⏸ Location sharing off'}
             </div>
+
             {locationStatus === 'denied' && (
               <div className="mt-2 text-xs text-gray-500 bg-gray-800 rounded-lg p-2 leading-relaxed">
-                Click the 🔒 lock icon → Site settings → Location → Allow
+                Click 🔒 in address bar → Site settings → Location → Allow → refresh page
+              </div>
+            )}
+
+            {!myMember && (
+              <div className="mt-2 text-xs text-red-400 bg-red-400/10 rounded-lg p-2">
+                Your account isn't linked to a member profile. Ask your admin to add you.
               </div>
             )}
           </div>
@@ -473,6 +493,7 @@ export default function Map() {
                 {sharingMembers.length} sharing
               </span>
             </div>
+
             {sharingMembers.length === 0 ? (
               <div className="text-center py-6">
                 <div className="text-gray-600 text-sm mb-2">No one sharing yet</div>
@@ -494,6 +515,7 @@ export default function Map() {
                 </div>
               ))
             )}
+
             <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-500 text-center">
               {members.filter(m => !m.location_sharing).length} members not sharing
             </div>
