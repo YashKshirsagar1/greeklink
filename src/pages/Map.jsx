@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+})
 
 const LOCATION_TYPES = {
   main: { color: '#D4AF37', label: 'Chapter house', symbol: 'Σ' },
@@ -11,19 +21,67 @@ const LOCATION_TYPES = {
   food: { color: '#22C55E', label: 'Food', symbol: 'F' },
 }
 
-const MAP_CENTER = { lat: 40.4444, lng: -79.9428 }
-const MAP_SCALE = 800
+const MAP_CENTER = [40.4444, -79.9428]
 
-function latLngToPercent(lat, lng) {
-  const x = 50 + (lng - MAP_CENTER.lng) * MAP_SCALE
-  const y = 50 - (lat - MAP_CENTER.lat) * MAP_SCALE
-  return { x, y }
+function createLocationIcon(type) {
+  const t = LOCATION_TYPES[type] || LOCATION_TYPES.custom
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:36px;height:36px;
+      background:${t.color};
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 3px 10px rgba(0,0,0,0.5);
+      border:2px solid rgba(255,255,255,0.4);
+    "><span style="transform:rotate(45deg);color:white;font-size:13px;font-weight:700;line-height:1">${t.symbol}</span></div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -38],
+  })
 }
 
-function percentToLatLng(x, y) {
-  const lng = MAP_CENTER.lng + (x - 50) / MAP_SCALE
-  const lat = MAP_CENTER.lat - (y - 50) / MAP_SCALE
-  return { lat, lng }
+function createMemberIcon(initials, colorClass, isMe) {
+  const hexMap = {
+    yellow: '#D4AF37', green: '#22C55E', blue: '#4A9EFF',
+    purple: '#A78BFA', red: '#EF4444', cyan: '#22D3EE',
+  }
+  const hex = Object.entries(hexMap).find(([k]) => colorClass.includes(k))?.[1] || '#4A9EFF'
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:38px;height:38px;
+      background:${hex}25;
+      border:2.5px solid ${isMe ? '#D4AF37' : '#22C55E'};
+      border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:700;color:${hex};
+      box-shadow:0 3px 10px rgba(0,0,0,0.5);
+      font-family:sans-serif;
+      position:relative;
+    ">
+      ${initials}
+      <div style="
+        position:absolute;bottom:-1px;right:-1px;
+        width:11px;height:11px;
+        background:#22C55E;border-radius:50%;
+        border:2px solid #0D0C10;
+      "></div>
+    </div>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -24],
+  })
+}
+
+function MapClickHandler({ addingPin, onMapClick }) {
+  useMapEvents({
+    click: (e) => {
+      if (addingPin) onMapClick(e.latlng.lat, e.latlng.lng)
+    }
+  })
+  return null
 }
 
 export default function Map() {
@@ -32,32 +90,26 @@ export default function Map() {
   const [locations, setLocations] = useState([])
   const [myMember, setMyMember] = useState(null)
   const [sharing, setSharing] = useState(false)
-  const [selectedMember, setSelectedMember] = useState(null)
-  const [selectedLocation, setSelectedLocation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [locationStatus, setLocationStatus] = useState('idle')
   const [isAdmin, setIsAdmin] = useState(false)
   const [showAddPin, setShowAddPin] = useState(false)
   const [newPin, setNewPin] = useState({ name: '', address: '', type: 'custom' })
   const [addingPin, setAddingPin] = useState(false)
-  const [pendingPin, setPendingPin] = useState(null)
+  const [pendingLatLng, setPendingLatLng] = useState(null)
   const [successMsg, setSuccessMsg] = useState('')
-  const mapRef = useRef(null)
   const watchRef = useRef(null)
 
   useEffect(() => {
     fetchAll()
-
     const membersSub = supabase
       .channel('map-members')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => fetchMembers())
       .subscribe()
-
     const locationsSub = supabase
       .channel('map-locations')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'map_locations' }, () => fetchLocations())
       .subscribe()
-
     return () => {
       supabase.removeChannel(membersSub)
       supabase.removeChannel(locationsSub)
@@ -92,15 +144,9 @@ export default function Map() {
 
   async function toggleSharing() {
     if (!myMember) return
-
     if (!sharing) {
       setLocationStatus('requesting')
-      if (!navigator.geolocation) {
-        setLocationStatus('error')
-        alert('Geolocation is not supported by your browser.')
-        return
-      }
-
+      if (!navigator.geolocation) { setLocationStatus('error'); return }
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const { latitude, longitude } = pos.coords
@@ -110,11 +156,9 @@ export default function Map() {
             longitude,
             location_updated_at: new Date().toISOString(),
           }).eq('id', myMember.id)
-
           setSharing(true)
           setLocationStatus('active')
           toast('Location sharing on — your pin is live!')
-
           watchRef.current = navigator.geolocation.watchPosition(
             async (pos) => {
               await supabase.from('members').update({
@@ -124,39 +168,28 @@ export default function Map() {
               }).eq('id', myMember.id)
             },
             null,
-            { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 }
+            { enableHighAccuracy: true, maximumAge: 15000 }
           )
         },
-        (err) => {
+        () => {
           setLocationStatus('denied')
-          if (err.code === 1) {
-            alert('Location permission denied. In Chrome: click the lock icon in the address bar → Site settings → Allow Location.')
-          } else {
-            alert('Could not get your location. Please try again.')
-          }
+          alert('Location denied. Click the lock icon in the address bar → Site settings → Allow Location.')
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true }
       )
     } else {
       if (watchRef.current) navigator.geolocation.clearWatch(watchRef.current)
       await supabase.from('members').update({
-        location_sharing: false,
-        latitude: null,
-        longitude: null,
+        location_sharing: false, latitude: null, longitude: null,
       }).eq('id', myMember.id)
       setSharing(false)
       setLocationStatus('idle')
-      toast('Location sharing turned off.')
+      toast('Location sharing off.')
     }
   }
 
-  function handleMapClick(e) {
-    if (!addingPin) return
-    const rect = mapRef.current.getBoundingClientRect()
-    const xPct = ((e.clientX - rect.left) / rect.width) * 100
-    const yPct = ((e.clientY - rect.top) / rect.height) * 100
-    const { lat, lng } = percentToLatLng(xPct, yPct)
-    setPendingPin({ x: Math.round(xPct), y: Math.round(yPct), lat, lng })
+  function handleMapClick(lat, lng) {
+    setPendingLatLng({ lat, lng })
     setShowAddPin(true)
     setAddingPin(false)
   }
@@ -167,27 +200,24 @@ export default function Map() {
       name: newPin.name.trim(),
       address: newPin.address.trim(),
       type: newPin.type,
-      x_pos: pendingPin?.x || 50,
-      y_pos: pendingPin?.y || 50,
-      latitude: pendingPin?.lat || MAP_CENTER.lat,
-      longitude: pendingPin?.lng || MAP_CENTER.lng,
+      latitude: pendingLatLng?.lat || MAP_CENTER[0],
+      longitude: pendingLatLng?.lng || MAP_CENTER[1],
+      x_pos: 50,
+      y_pos: 50,
       added_by: user?.id,
     })
     setShowAddPin(false)
     setNewPin({ name: '', address: '', type: 'custom' })
-    setPendingPin(null)
+    setPendingLatLng(null)
     toast('Pin added to map!')
   }
 
   async function deletePin(id) {
     await supabase.from('map_locations').delete().eq('id', id)
-    setSelectedLocation(null)
     toast('Pin removed.')
   }
 
   const sharingMembers = members.filter(m => m.location_sharing && m.latitude && m.longitude)
-  const onlineCount = sharingMembers.length
-
   const memberColors = [
     'bg-yellow-400/30 text-yellow-400',
     'bg-green-400/30 text-green-400',
@@ -221,7 +251,7 @@ export default function Map() {
         </div>
         {isAdmin && (
           <button
-            onClick={() => { setAddingPin(!addingPin); setSelectedMember(null); setSelectedLocation(null) }}
+            onClick={() => setAddingPin(!addingPin)}
             className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all
               ${addingPin
                 ? 'bg-yellow-400 text-gray-900 border-yellow-400'
@@ -233,19 +263,19 @@ export default function Map() {
       </div>
 
       {successMsg && (
-        <div className="fixed top-6 right-6 bg-green-500 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-xl z-50">
+        <div className="fixed top-6 right-6 bg-green-500 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-xl z-[9999]">
           ✓ {successMsg}
         </div>
       )}
 
       {addingPin && (
         <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-xl px-4 py-3 mb-4 text-sm text-yellow-400">
-          📍 Click anywhere on the map below to place your pin
+          📍 Click anywhere on the map to drop a pin
         </div>
       )}
 
       {showAddPin && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-40">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm mx-4">
             <div className="text-lg font-bold text-white mb-4">Add map pin</div>
             <div className="mb-3">
@@ -278,14 +308,14 @@ export default function Map() {
                 ))}
               </select>
             </div>
-            {pendingPin && (
+            {pendingLatLng && (
               <div className="text-xs text-gray-500 mb-4 bg-gray-800 rounded-lg px-3 py-2">
-                📍 Coordinates: {pendingPin.lat?.toFixed(4)}, {pendingPin.lng?.toFixed(4)}
+                📍 {pendingLatLng.lat.toFixed(5)}, {pendingLatLng.lng.toFixed(5)}
               </div>
             )}
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowAddPin(false); setPendingPin(null) }}
+                onClick={() => { setShowAddPin(false); setPendingLatLng(null) }}
                 className="flex-1 bg-gray-800 text-gray-300 border border-gray-700 rounded-xl py-2.5 text-sm hover:bg-gray-700 transition-all"
               >
                 Cancel
@@ -303,188 +333,80 @@ export default function Map() {
 
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2">
+          <div className="rounded-xl overflow-hidden mb-4 border border-gray-800" style={{ height: '480px' }}>
+            <MapContainer
+              center={MAP_CENTER}
+              zoom={15}
+              style={{ height: '100%', width: '100%' }}
+              className="z-0"
+            >
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+              />
+              <MapClickHandler addingPin={addingPin} onMapClick={handleMapClick} />
 
-          {/* Map canvas */}
-          <div
-            ref={mapRef}
-            onClick={handleMapClick}
-            className={`border border-gray-800 rounded-xl overflow-hidden mb-4 relative ${addingPin ? 'cursor-crosshair' : 'cursor-default'}`}
-            style={{ height: '460px' }}
-          >
-            {/* OpenStreetMap background */}
-            <iframe
-              title="map"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${MAP_CENTER.lng - 0.02},${MAP_CENTER.lat - 0.015},${MAP_CENTER.lng + 0.02},${MAP_CENTER.lat + 0.015}&layer=mapnik`}
-              className="absolute inset-0 w-full h-full"
-              style={{ filter: 'invert(90%) hue-rotate(180deg) brightness(0.85) contrast(0.9)', pointerEvents: addingPin ? 'none' : 'auto' }}
-            />
-
-            {/* Dark overlay for contrast */}
-            <div className="absolute inset-0" style={{ background: 'rgba(13,12,16,0.15)', pointerEvents: 'none' }} />
-
-            {/* Location pins */}
-            {locations.map(loc => {
-              const t = LOCATION_TYPES[loc.type] || LOCATION_TYPES.custom
-              const pos = loc.latitude && loc.longitude
-                ? latLngToPercent(loc.latitude, loc.longitude)
-                : { x: loc.x_pos, y: loc.y_pos }
-
-              if (pos.x < 1 || pos.x > 99 || pos.y < 1 || pos.y > 99) return null
-
-              return (
-                <div
-                  key={loc.id}
-                  className="absolute cursor-pointer group"
-                  style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: 'translate(-50%, -100%)', zIndex: 10 }}
-                  onClick={e => { e.stopPropagation(); setSelectedLocation(loc); setSelectedMember(null) }}
-                >
-                  <div
-                    className="w-8 h-8 rounded-full rounded-bl-none flex items-center justify-center shadow-lg transition-transform group-hover:scale-110"
-                    style={{ background: t.color, transform: 'rotate(-45deg)' }}
+              {locations.map(loc => (
+                loc.latitude && loc.longitude ? (
+                  <Marker
+                    key={loc.id}
+                    position={[loc.latitude, loc.longitude]}
+                    icon={createLocationIcon(loc.type)}
                   >
-                    <span style={{ transform: 'rotate(45deg)' }} className="text-white text-xs font-bold">{t.symbol}</span>
-                  </div>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-gray-900/95 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                    {loc.name}
-                    {loc.address && <div className="text-gray-400">{loc.address}</div>}
-                  </div>
-                </div>
-              )
-            })}
-
-            {/* Member dots with real GPS */}
-            {sharingMembers.map(m => {
-              const isMe = m.user_id === user?.id
-              const color = getMemberColor(m)
-              const pos = latLngToPercent(m.latitude, m.longitude)
-
-              if (pos.x < 1 || pos.x > 99 || pos.y < 1 || pos.y > 99) return null
-
-              return (
-                <div
-                  key={m.id}
-                  className="absolute cursor-pointer group"
-                  style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: 'translate(-50%, -50%)', zIndex: 20 }}
-                  onClick={e => { e.stopPropagation(); setSelectedMember(m); setSelectedLocation(null) }}
-                >
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-transform group-hover:scale-125 shadow-lg ${color} ${isMe ? 'border-yellow-400' : 'border-green-400'}`}>
-                    {m.initials}
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-gray-950"></div>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900/95 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                    {m.name}{isMe ? ' (you)' : ''}
-                  </div>
-                </div>
-              )
-            })}
-
-            {/* Pending pin bounce preview */}
-            {pendingPin && (
-              <div
-                className="absolute"
-                style={{ left: `${pendingPin.x}%`, top: `${pendingPin.y}%`, transform: 'translate(-50%, -100%)', zIndex: 30 }}
-              >
-                <div
-                  className="w-8 h-8 rounded-full rounded-bl-none flex items-center justify-center bg-yellow-400 animate-bounce"
-                  style={{ transform: 'rotate(-45deg)' }}
-                >
-                  <span style={{ transform: 'rotate(45deg)' }} className="text-gray-900 text-xs font-bold">+</span>
-                </div>
-              </div>
-            )}
-
-            {/* Selected popup */}
-            {(selectedMember || selectedLocation) && (
-              <div
-                className="absolute bottom-4 left-4 bg-gray-900 border border-gray-700 rounded-xl p-3 min-w-[200px] shadow-xl"
-                style={{ zIndex: 50 }}
-              >
-                <button
-                  onClick={() => { setSelectedMember(null); setSelectedLocation(null) }}
-                  className="absolute top-2 right-2 text-gray-500 hover:text-white text-xs"
-                >✕</button>
-
-                {selectedMember && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${getMemberColor(selectedMember)}`}>
-                        {selectedMember.initials}
+                    <Popup>
+                      <div style={{ fontFamily: 'sans-serif', minWidth: '140px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '4px' }}>{loc.name}</div>
+                        {loc.address && <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>📍 {loc.address}</div>}
+                        <div style={{ fontSize: '11px', color: '#aaa' }}>{LOCATION_TYPES[loc.type]?.label}</div>
+                        {isAdmin && (
+                          <button
+                            onClick={() => deletePin(loc.id)}
+                            style={{ marginTop: '8px', fontSize: '11px', color: '#ef4444', background: 'none', border: '1px solid #ef444440', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            Remove
+                          </button>
+                        )}
                       </div>
-                      <div>
-                        <div className="text-sm font-medium text-white">{selectedMember.name}</div>
-                        <div className="text-xs text-gray-500">{selectedMember.role}</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-green-400 mb-1">● Sharing live location</div>
-                    <div className="text-xs text-gray-500">Updated {getTimeAgo(selectedMember.location_updated_at)}</div>
-                    {selectedMember.latitude && (
-                      <div className="text-xs text-gray-600 mt-1 font-mono">
-                        {selectedMember.latitude.toFixed(4)}, {selectedMember.longitude.toFixed(4)}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {selectedLocation && (
-                  <div>
-                    <div className="text-sm font-medium text-white mb-1">{selectedLocation.name}</div>
-                    {selectedLocation.address && (
-                      <div className="text-xs text-gray-400 mb-1">📍 {selectedLocation.address}</div>
-                    )}
-                    <div className="text-xs text-gray-500 capitalize mb-2">
-                      {LOCATION_TYPES[selectedLocation.type]?.label || selectedLocation.type}
-                    </div>
-                    {isAdmin && (
-                      <button
-                        onClick={() => deletePin(selectedLocation.id)}
-                        className="text-xs text-red-400 hover:text-red-300 transition-all border border-red-400/30 px-2 py-1 rounded-lg"
-                      >
-                        Remove pin
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Legend */}
-            <div className="absolute top-3 right-3 bg-gray-900/95 border border-gray-800 rounded-lg p-2.5 flex flex-col gap-1.5" style={{ zIndex: 10 }}>
-              {Object.entries(LOCATION_TYPES).slice(0, 4).map(([key, val]) => (
-                <div key={key} className="flex items-center gap-2 text-xs text-gray-400">
-                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: val.color }}></div>
-                  {val.label}
-                </div>
+                    </Popup>
+                  </Marker>
+                ) : null
               ))}
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <div className="w-3 h-3 rounded-full border-2 border-green-400 bg-green-400/20 flex-shrink-0"></div>
-                Member (live)
-              </div>
-            </div>
 
-            {onlineCount > 0 && (
-              <div className="absolute top-3 left-3 bg-gray-900/95 border border-green-400/30 rounded-lg px-3 py-1.5 flex items-center gap-2" style={{ zIndex: 10 }}>
-                <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                <span className="text-xs text-green-400 font-medium">{onlineCount} live</span>
-              </div>
-            )}
+              {sharingMembers.map(m => (
+                <Marker
+                  key={m.id}
+                  position={[m.latitude, m.longitude]}
+                  icon={createMemberIcon(m.initials, getMemberColor(m), m.user_id === user?.id)}
+                >
+                  <Popup>
+                    <div style={{ fontFamily: 'sans-serif', minWidth: '140px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '2px' }}>
+                        {m.name} {m.user_id === user?.id ? '(you)' : ''}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>{m.role}</div>
+                      <div style={{ fontSize: '11px', color: '#22c55e' }}>● Live location</div>
+                      <div style={{ fontSize: '10px', color: '#aaa', marginTop: '2px' }}>
+                        Updated {getTimeAgo(m.location_updated_at)}
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
           </div>
 
-          {/* Saved locations list */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-semibold text-white">Saved locations ({locations.length})</div>
               {isAdmin && (
-                <button
-                  onClick={() => setAddingPin(true)}
-                  className="text-yellow-400 text-xs hover:text-yellow-300"
-                >
+                <button onClick={() => setAddingPin(true)} className="text-yellow-400 text-xs hover:text-yellow-300">
                   + Add location
                 </button>
               )}
             </div>
             {locations.length === 0 ? (
               <div className="text-sm text-gray-500 text-center py-4">
-                No locations yet. {isAdmin ? 'Click "+ Add pin" above to add one.' : 'Your admin will add locations soon.'}
+                {isAdmin ? 'Click "+ Add pin" to add your first location.' : 'Admin will add locations soon.'}
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
@@ -492,10 +414,8 @@ export default function Map() {
                   const t = LOCATION_TYPES[loc.type] || LOCATION_TYPES.custom
                   return (
                     <div key={loc.id} className="flex items-center gap-3 bg-gray-800 rounded-lg p-3">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-bold"
-                        style={{ background: t.color + '30', color: t.color }}
-                      >
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-bold"
+                        style={{ background: t.color + '25', color: t.color }}>
                         {t.symbol}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -503,10 +423,7 @@ export default function Map() {
                         <div className="text-xs text-gray-500 truncate">{loc.address || t.label}</div>
                       </div>
                       {isAdmin && (
-                        <button
-                          onClick={() => deletePin(loc.id)}
-                          className="text-gray-600 hover:text-red-400 text-sm transition-all flex-shrink-0"
-                        >×</button>
+                        <button onClick={() => deletePin(loc.id)} className="text-gray-600 hover:text-red-400 text-sm transition-all">×</button>
                       )}
                     </div>
                   )
@@ -516,13 +433,9 @@ export default function Map() {
           </div>
         </div>
 
-        {/* Right panel */}
         <div className="flex flex-col gap-4">
-
-          {/* My location */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <div className="text-sm font-semibold text-white mb-3">My location</div>
-
             <div className="flex items-center justify-between py-2.5 border-b border-gray-800">
               <div>
                 <div className="text-sm text-white">Share my location</div>
@@ -535,7 +448,6 @@ export default function Map() {
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${sharing ? 'left-5' : 'left-1'}`}></div>
               </button>
             </div>
-
             <div className={`mt-3 text-xs px-3 py-2 rounded-lg ${
               locationStatus === 'active' ? 'bg-green-400/10 text-green-400' :
               locationStatus === 'requesting' ? 'bg-yellow-400/10 text-yellow-400' :
@@ -543,39 +455,32 @@ export default function Map() {
               'bg-gray-800 text-gray-500'
             }`}>
               {locationStatus === 'active' ? '● Live — your pin is on the map' :
-               locationStatus === 'requesting' ? '⏳ Requesting GPS access...' :
-               locationStatus === 'denied' ? '✕ Location denied — check browser settings' :
-               sharing ? '● Location sharing on' : '⏸ Location sharing off'}
+               locationStatus === 'requesting' ? '⏳ Requesting GPS...' :
+               locationStatus === 'denied' ? '✕ Denied — check browser settings' :
+               '⏸ Location sharing off'}
             </div>
-
             {locationStatus === 'denied' && (
-              <div className="mt-2 text-xs text-gray-500 bg-gray-800 rounded-lg p-2">
-                Chrome: click the 🔒 lock icon in address bar → Site settings → Location → Allow
+              <div className="mt-2 text-xs text-gray-500 bg-gray-800 rounded-lg p-2 leading-relaxed">
+                Click the 🔒 lock icon → Site settings → Location → Allow
               </div>
             )}
           </div>
 
-          {/* Live members */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex-1">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-semibold text-white">Live locations</div>
               <span className="text-xs bg-green-400/10 text-green-400 px-2 py-0.5 rounded font-medium">
-                {onlineCount} sharing
+                {sharingMembers.length} sharing
               </span>
             </div>
-
             {sharingMembers.length === 0 ? (
               <div className="text-center py-6">
                 <div className="text-gray-600 text-sm mb-2">No one sharing yet</div>
-                <div className="text-xs text-gray-600 leading-relaxed">Toggle "Share my location" above — your browser will ask for GPS permission</div>
+                <div className="text-xs text-gray-600 leading-relaxed">Toggle location sharing above to appear on the map</div>
               </div>
             ) : (
               sharingMembers.map(m => (
-                <div
-                  key={m.id}
-                  onClick={() => { setSelectedMember(m); setSelectedLocation(null) }}
-                  className="flex items-center gap-3 py-2.5 border-b border-gray-800 last:border-0 cursor-pointer hover:bg-gray-800/50 rounded-lg px-1 -mx-1 transition-all"
-                >
+                <div key={m.id} className="flex items-center gap-3 py-2.5 border-b border-gray-800 last:border-0">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${getMemberColor(m)}`}>
                     {m.initials}
                   </div>
@@ -589,13 +494,11 @@ export default function Map() {
                 </div>
               ))
             )}
-
             <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-500 text-center">
               {members.filter(m => !m.location_sharing).length} members not sharing
             </div>
           </div>
 
-          {/* Admin panel */}
           {isAdmin && (
             <div className="bg-gray-900 border border-yellow-400/20 rounded-xl p-4">
               <div className="text-sm font-semibold text-yellow-400 mb-3">Admin — member status</div>
