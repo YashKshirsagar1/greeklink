@@ -27,22 +27,54 @@ function createLocationIcon(type) {
   const t = LOCATION_TYPES[type] || LOCATION_TYPES.custom
   return L.divIcon({
     className: '',
-    html: `<div style="width:36px;height:36px;background:${t.color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.4)"><span style="transform:rotate(45deg);color:white;font-size:13px;font-weight:700;line-height:1">${t.symbol}</span></div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 36],
-    popupAnchor: [0, -38],
+    html: `<div style="
+      width:40px;height:40px;
+      background:${t.color};
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 14px rgba(0,0,0,0.8), 0 0 0 3px white;
+      border:2px solid rgba(255,255,255,0.9);
+    "><span style="transform:rotate(45deg);color:white;font-size:15px;font-weight:900;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5)">${t.symbol}</span></div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -42],
   })
 }
 
 function createMemberIcon(initials, colorClass, isMe) {
-  const hexMap = { yellow: '#D4AF37', green: '#22C55E', blue: '#4A9EFF', purple: '#A78BFA', red: '#EF4444', cyan: '#22D3EE' }
+  const hexMap = {
+    yellow: '#D4AF37', green: '#22C55E', blue: '#4A9EFF',
+    purple: '#A78BFA', red: '#EF4444', cyan: '#22D3EE'
+  }
   const hex = Object.entries(hexMap).find(([k]) => colorClass.includes(k))?.[1] || '#4A9EFF'
   return L.divIcon({
     className: '',
-    html: `<div style="width:38px;height:38px;background:${hex}25;border:2.5px solid ${isMe ? '#D4AF37' : '#22C55E'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${hex};box-shadow:0 3px 10px rgba(0,0,0,0.5);font-family:sans-serif;position:relative">${initials}<div style="position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;background:#22C55E;border-radius:50%;border:2px solid #0D0C10"></div></div>`,
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -24],
+    html: `<div style="
+      width:42px;height:42px;
+      background:${hex};
+      border:3px solid ${isMe ? '#ffffff' : '#22C55E'};
+      border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;font-weight:900;color:white;
+      box-shadow:0 4px 14px rgba(0,0,0,0.8), 0 0 0 2px ${isMe ? '#D4AF37' : '#22C55E'};
+      font-family:sans-serif;
+      position:relative;
+      text-shadow:0 1px 3px rgba(0,0,0,0.5);
+    ">
+      ${initials}
+      <div style="
+        position:absolute;bottom:-2px;right:-2px;
+        width:13px;height:13px;
+        background:#22C55E;
+        border-radius:50%;
+        border:2.5px solid white;
+        box-shadow:0 2px 4px rgba(0,0,0,0.5);
+      "></div>
+    </div>`,
+    iconSize: [42, 42],
+    iconAnchor: [21, 21],
+    popupAnchor: [0, -26],
   })
 }
 
