@@ -5,24 +5,24 @@ import { useAuth } from '../lib/AuthContext'
 const channels = [
   { id: 1, name: 'All Members', icon: 'ΣΑΕ', color: 'bg-yellow-400/20 text-yellow-400' },
   { id: 2, name: 'Exec Board', icon: 'EB', color: 'bg-blue-400/20 text-blue-400' },
-  { id: 3, name: 'Pledge Class \'25', icon: 'PC', color: 'bg-purple-400/20 text-purple-400' },
+  { id: 3, name: "Pledge Class '25", icon: 'PC', color: 'bg-purple-400/20 text-purple-400' },
   { id: 4, name: 'Risk & Safety', icon: 'RS', color: 'bg-red-400/20 text-red-400' },
   { id: 5, name: 'Social Committee', icon: 'SC', color: 'bg-green-400/20 text-green-400' },
   { id: 6, name: 'Rush Committee', icon: 'RU', color: 'bg-orange-400/20 text-orange-400' },
   { id: 7, name: 'Alumni Network', icon: 'AL', color: 'bg-gray-400/20 text-gray-400' },
 ]
 
-const QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '😡', '👍']
+const QUICK_REACTIONS = ['❤️','😂','😮','😢','😡','👍','🔥','🎉','👀','💯','🤣','😍','🥳','💀','🫡','👏','🤝','💪']
 
 const EMOJI_CATEGORIES = {
   'Smileys': ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'],
-  'Gestures': ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦵','🦶','👂','🦻','👃','👀','👁','👅','👄','💋'],
-  'People': ['👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👮','🕵️','💂','🥷','👷','🫅','🤴','👸','👳','👲','🧕','🤵','👰','🤰','🤱','👼','🎅','🤶','🦸','🦹','🧙','🧝','🧛','🧟','🧞','🧜','🧚','🧑‍🎤','🧑‍🎨','🧑‍🏫','🧑‍🏭','🧑‍💻','🧑‍🔬','🧑‍🍳'],
-  'Animals': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🦋','🐛','🐌','🐞','🐜','🦟','🦗','🕷','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🦣','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🦬','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐈','🐓','🦃','🦤','🦚','🦜','🦢','🦩'],
-  'Food': ['🍎','🍊','🍋','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🫓','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🫔','🌮','🌯','🥙','🧆','🥚','🍜','🍝','🍛','🍲','🫕','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥮','🍢','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🧃','🥤','🧋','☕','🍵','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹'],
-  'Activities': ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🥍','🏑','🏏','🪃','🥅','⛳','🪁','🎣','🤿','🎽','🎿','🛷','🥌','🎯','🪀','🪆','🎮','🎲','🧩','🎭','🎨','🖼','🎰','🎳','🏋️','🤸','🤺','🤼','🤾','🏇','⛷️','🏂','🏌️','🏄','🚣','🧗','🚵','🚴','🏊','🤽','🧘','🛹','🛼','🛺','🛻','🚀','🛸','🪂'],
-  'Objects': ['💡','🔦','🕯','🪔','💰','💳','💎','⚖️','🪝','🔧','🪛','🔨','⛏','🪚','🔩','🪤','🧲','🔫','💣','🪓','🔪','🗡','⚔️','🛡','🪃','🪖','📱','💻','⌨️','🖥','🖨','🖱','🖲','💾','💿','📀','📷','📸','📹','🎥','📽','🎞','📞','☎️','📟','📠','📺','📻','🎙','🎚','🎛','🧭','⏱','⏰','🕰','⌚','📡','🔋','🔌','💡','🔦','🕯','🧯','🛢','💸','💵','💴','💶','💷'],
-  'Symbols': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','❤️‍🩹','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','⛎','🔀','🔁','🔂','▶️','⏩','⏭','⏯','◀️','⏪','⏮','🔼','⏫','🔽','⏬','⏸','⏹','⏺','🎦','🔅','🔆','📶','📳','📴','📵','📳','🔇','🔈','🔉','🔊','📢','📣','📯','🔔','🔕','🃏','🀄','♟','🔇','🔕','🔛','🔜','🔝','✅','❎','🆗','🆙','🆒','🆕','🆓','🔟','🔠','🔡','🔢','🔣','🔤','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫'],
+  'Gestures': ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦵','🦶','👂','👃','👀','👅','👄','💋'],
+  'People': ['👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👮','🕵️','💂','🥷','👷','🤴','👸','👳','👲','🧕','🤵','👰','🤰','🤱','👼','🎅','🤶','🦸','🦹','🧙','🧝','🧛','🧟','🧞','🧜','🧚'],
+  'Animals': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🦋','🐛','🐌','🐞','🐜','🦟','🦗','🕷','🦂','🐢','🐍','🦎','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩'],
+  'Food': ['🍎','🍊','🍋','🍇','🍓','🫐','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥒','🌶️','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🧀','🥚','🍳','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🌮','🌯','🥙','🧆','🍜','🍝','🍛','🍲','🍣','🍱','🥟','🍤','🍙','🍚','🍘','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🧃','🥤','🧋','☕','🍵','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹'],
+  'Activities': ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🥍','🏑','🏏','🥅','⛳','🎣','🤿','🎽','🎿','🛷','🥌','🎯','🪀','🎮','🎲','🧩','🎭','🎨','🎰','🎳','🏋️','🤸','🤺','🤼','🤾','⛷️','🏂','🏄','🚣','🧗','🚵','🚴','🏊','🤽','🧘','🛹','🚀','🛸','🪂'],
+  'Objects': ['💡','🔦','🕯','💰','💳','💎','⚖️','🔧','🔨','⛏','🔩','🧲','🔫','💣','🔪','⚔️','🛡','📱','💻','⌨️','🖥','💾','💿','📀','📷','📸','📹','🎥','📞','☎️','📺','📻','🎙','🧭','⏱','⏰','⌚','📡','🔋','🔌','💸','💵','🔑','🗝','🔐','🔒','🔓','🚪','🛋','🛏','🛁','🚿','🧴','🧹','🧺','🧻','🧼','🧽','🧯','🛒'],
+  'Symbols': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉','☸️','✡️','🔯','🕎','☯️','☦️','🛐','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🔀','🔁','🔂','▶️','⏩','⏭','⏯','◀️','⏪','⏮','🔼','⏫','🔽','⏬','⏸','⏹','⏺','🎦','🔅','🔆','📶','🔇','🔈','🔉','🔊','📢','📣','🔔','🔕','✅','❎','🆗','🆙','🆒','🆕','🆓','🔟','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫'],
 }
 
 const GIPHY_KEY = 'sXpGFDGZs0Dv1mmNFvYaGUvYwKX0PWIh'
@@ -41,24 +41,28 @@ function useLongPress(onLongPress, ms = 500) {
       onLongPress(e)
     }, ms)
   }, [onLongPress, ms])
-  const cancel = useCallback(() => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
-  const click = useCallback((e) => { if (isLongPress.current) e.preventDefault() }, [])
-  return { onMouseDown: start, onMouseUp: cancel, onMouseLeave: cancel, onTouchStart: start, onTouchEnd: cancel, onClick: click }
+  const cancel = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+  }, [])
+  const click = useCallback((e) => {
+    if (isLongPress.current) e.preventDefault()
+  }, [])
+  return {
+    onMouseDown: start, onMouseUp: cancel, onMouseLeave: cancel,
+    onTouchStart: start, onTouchEnd: cancel, onClick: click,
+  }
 }
 
 function EmojiPicker({ onSelect, onClose }) {
   const [activeCategory, setActiveCategory] = useState('Smileys')
   const [search, setSearch] = useState('')
-
   const filtered = search
     ? Object.values(EMOJI_CATEGORIES).flat().filter(e => e.includes(search))
     : EMOJI_CATEGORIES[activeCategory] || []
-
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden" style={{ width: '320px' }}>
       <div className="p-2 border-b border-gray-800">
-        <input
-          autoFocus
+        <input autoFocus
           className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 outline-none placeholder-gray-500"
           placeholder="Search emoji..."
           value={search}
@@ -68,27 +72,18 @@ function EmojiPicker({ onSelect, onClose }) {
       {!search && (
         <div className="flex overflow-x-auto border-b border-gray-800 px-1">
           {Object.keys(EMOJI_CATEGORIES).map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`flex-shrink-0 px-3 py-2 text-xs font-medium transition-all border-b-2 ${
-                activeCategory === cat
-                  ? 'text-yellow-400 border-yellow-400'
-                  : 'text-gray-500 border-transparent hover:text-gray-300'
-              }`}
-            >
+            <button key={cat} onClick={() => setActiveCategory(cat)}
+              className={`flex-shrink-0 px-3 py-2 text-xs font-medium transition-all border-b-2
+                ${activeCategory === cat ? 'text-yellow-400 border-yellow-400' : 'text-gray-500 border-transparent hover:text-gray-300'}`}>
               {cat}
             </button>
           ))}
         </div>
       )}
-      <div className="grid p-2 overflow-y-auto" style={{ gridTemplateColumns: 'repeat(8, 1fr)', maxHeight: '200px' }}>
+      <div className="grid p-2 overflow-y-auto" style={{ gridTemplateColumns: 'repeat(8,1fr)', maxHeight: '200px' }}>
         {filtered.map((emoji, i) => (
-          <button
-            key={i}
-            onClick={() => { onSelect(emoji); onClose() }}
-            className="w-9 h-9 flex items-center justify-center text-xl hover:bg-gray-800 rounded-lg transition-all hover:scale-110"
-          >
+          <button key={i} onClick={() => { onSelect(emoji); onClose() }}
+            className="w-9 h-9 flex items-center justify-center text-xl hover:bg-gray-800 rounded-lg transition-all hover:scale-110">
             {emoji}
           </button>
         ))}
@@ -107,15 +102,13 @@ function GifPicker({ onSelect, onClose }) {
   async function fetchGifs(query) {
     setLoading(true)
     try {
-      const endpoint = query === 'trending'
+      const url = query === 'trending'
         ? `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=24&rating=g`
         : `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(query)}&limit=24&rating=g`
-      const res = await fetch(endpoint)
+      const res = await fetch(url)
       const data = await res.json()
       setGifs(data.data || [])
-    } catch {
-      setGifs([])
-    }
+    } catch { setGifs([]) }
     setLoading(false)
   }
 
@@ -125,13 +118,12 @@ function GifPicker({ onSelect, onClose }) {
     else if (e.target.value === '') fetchGifs('trending')
   }
 
-  const suggestions = ['Excited', 'Party', 'Fire', 'Love', 'LOL', 'Win', 'Frat', 'Lets go', 'No way', 'Amazing']
+  const suggestions = ['Excited','Party','Fire','Love','LOL','Win','Frat','Lets go','No way','Amazing']
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden" style={{ width: '340px' }}>
       <div className="p-2 border-b border-gray-800">
-        <input
-          autoFocus
+        <input autoFocus
           className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 outline-none placeholder-gray-500"
           placeholder="Search GIFs..."
           value={search}
@@ -140,11 +132,8 @@ function GifPicker({ onSelect, onClose }) {
       </div>
       <div className="flex gap-1 px-2 py-1.5 overflow-x-auto border-b border-gray-800">
         {suggestions.map(s => (
-          <button
-            key={s}
-            onClick={() => { setSearch(s); fetchGifs(s) }}
-            className="flex-shrink-0 text-xs bg-gray-800 text-gray-300 px-2.5 py-1 rounded-full hover:bg-gray-700 transition-all"
-          >
+          <button key={s} onClick={() => { setSearch(s); fetchGifs(s) }}
+            className="flex-shrink-0 text-xs bg-gray-800 text-gray-300 px-2.5 py-1 rounded-full hover:bg-gray-700 transition-all">
             {s}
           </button>
         ))}
@@ -157,24 +146,19 @@ function GifPicker({ onSelect, onClose }) {
         ) : (
           <div className="grid grid-cols-3 gap-1 p-2">
             {gifs.map(gif => (
-              <div
-                key={gif.id}
+              <div key={gif.id}
                 onClick={() => { onSelect(gif.images.fixed_height.url); onClose() }}
-                className="cursor-pointer rounded-lg overflow-hidden hover:opacity-80 transition-opacity aspect-video"
-              >
-                <img
-                  src={gif.images.fixed_height_small.url}
-                  alt={gif.title}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
+                className="cursor-pointer rounded-lg overflow-hidden hover:opacity-80 transition-opacity"
+                style={{ aspectRatio: '1' }}>
+                <img src={gif.images.fixed_height_small.url} alt={gif.title}
+                  className="w-full h-full object-cover" loading="lazy" />
               </div>
             ))}
           </div>
         )}
       </div>
-      <div className="px-3 py-1.5 border-t border-gray-800">
-        <div className="text-xs text-gray-600 text-center">Powered by GIPHY</div>
+      <div className="px-3 py-1.5 border-t border-gray-800 text-xs text-gray-600 text-center">
+        Powered by GIPHY
       </div>
     </div>
   )
@@ -182,10 +166,11 @@ function GifPicker({ onSelect, onClose }) {
 
 function MessageBubble({ msg, isMine, showSender, user, allMessages, onReact, onReply, onCopy, onUnsend }) {
   const [showContextMenu, setShowContextMenu] = useState(false)
-  const [menuPos, setMenuPos] = useState({ top: 0, side: 0 })
+  const [menuPos, setMenuPos] = useState({ top: 200, left: 100 })
   const bubbleRef = useRef(null)
   const reactions = msg.reactions || {}
   const readBy = Array.isArray(msg.read_by) ? msg.read_by : []
+  const totalReactions = Object.values(reactions).flat().length
 
   function getReplyMsg(id) {
     for (const msgs of Object.values(allMessages)) {
@@ -200,8 +185,12 @@ function MessageBubble({ msg, isMine, showSender, user, allMessages, onReact, on
     e.preventDefault()
     const rect = bubbleRef.current?.getBoundingClientRect()
     if (rect) {
-      const top = rect.top + window.scrollY
-      setMenuPos({ top, side: isMine ? window.innerWidth - rect.right : rect.left })
+      // Position above the bubble, centered on it
+      const menuWidth = 320
+      let left = rect.left + rect.width / 2 - menuWidth / 2
+      left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8))
+      const top = Math.max(60, rect.top - 220)
+      setMenuPos({ top, left })
     }
     setShowContextMenu(true)
     if (navigator.vibrate) navigator.vibrate(40)
@@ -212,7 +201,8 @@ function MessageBubble({ msg, isMine, showSender, user, allMessages, onReact, on
   return (
     <div className={`flex gap-2 ${isMine ? 'flex-row-reverse' : ''} ${showSender ? 'mt-4' : 'mt-0.5'} relative`}>
       {!isMine && (
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1 ${msg.sender_color || 'bg-gray-700 text-gray-300'} ${!showSender ? 'opacity-0' : ''}`}>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1
+          ${msg.sender_color || 'bg-gray-700 text-gray-300'} ${!showSender ? 'opacity-0' : ''}`}>
           {msg.sender_initials}
         </div>
       )}
@@ -228,14 +218,13 @@ function MessageBubble({ msg, isMine, showSender, user, allMessages, onReact, on
           </div>
         )}
 
+        {/* Bubble */}
         <div
           ref={bubbleRef}
           {...lp}
           style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
           className={`relative rounded-2xl text-sm leading-relaxed cursor-pointer
-            ${isMine
-              ? 'rounded-tr-sm bg-yellow-400/25 text-white'
-              : 'rounded-tl-sm bg-gray-800 text-gray-100'}
+            ${isMine ? 'rounded-tr-sm bg-yellow-400/25 text-white' : 'rounded-tl-sm bg-gray-800 text-gray-100'}
             ${msg.image_url || msg.gif_url ? 'p-1' : 'px-3.5 py-2.5'}`}
         >
           {msg.image_url && msg.message_type !== 'video' && (
@@ -247,20 +236,23 @@ function MessageBubble({ msg, isMine, showSender, user, allMessages, onReact, on
             <video src={msg.image_url} controls className="rounded-xl max-w-[260px] max-h-[280px] block" />
           )}
           {msg.gif_url && (
-            <img src={msg.gif_url} alt="gif" className="rounded-xl max-w-[260px] max-h-[220px] object-cover block" />
+            <img src={msg.gif_url} alt="gif"
+              className="rounded-xl max-w-[260px] max-h-[220px] object-cover block" />
           )}
           {msg.text && (
             <div className={msg.image_url || msg.gif_url ? 'px-2 py-1 text-xs' : ''}>
               {msg.text.split(' ').map((word, i) =>
                 isValidUrl(word)
-                  ? <a key={i} href={word} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300">{word} </a>
+                  ? <a key={i} href={word} target="_blank" rel="noopener noreferrer"
+                    className="text-blue-400 underline hover:text-blue-300">{word} </a>
                   : <span key={i}>{word} </span>
               )}
             </div>
           )}
         </div>
 
-        {Object.keys(reactions).filter(e => reactions[e]?.length > 0).length > 0 && (
+        {/* Reactions */}
+        {totalReactions > 0 && (
           <div className={`flex -mt-1 mb-0.5 z-10 ${isMine ? 'mr-1' : 'ml-1'}`}>
             <div className="flex items-center bg-gray-900 border border-gray-700 rounded-full px-2 py-0.5 gap-1 shadow-lg">
               {Object.entries(reactions).filter(([, u]) => u.length > 0).map(([emoji, users]) => (
@@ -269,13 +261,12 @@ function MessageBubble({ msg, isMine, showSender, user, allMessages, onReact, on
                   {emoji}
                 </button>
               ))}
-              <span className="text-xs text-gray-400 font-medium">
-                {Object.values(reactions).flat().length}
-              </span>
+              <span className="text-xs text-gray-400 font-medium">{totalReactions}</span>
             </div>
           </div>
         )}
 
+        {/* Time + read receipt */}
         <div className="flex items-center gap-1 mt-0.5 px-1">
           <span className="text-xs text-gray-600">
             {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -288,37 +279,42 @@ function MessageBubble({ msg, isMine, showSender, user, allMessages, onReact, on
         </div>
       </div>
 
+      {/* Context menu */}
       {showContextMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowContextMenu(false)} />
-          <div className="fixed z-50" style={{
-            top: Math.max(10, menuPos.top - 120),
-            ...(isMine ? { right: 16 } : { left: 16 }),
-          }}>
-            <div className="bg-gray-900 border border-gray-700 rounded-full px-3 py-2 flex gap-2 shadow-2xl mb-2">
-              {QUICK_REACTIONS.map(emoji => (
-                <button key={emoji} onClick={() => { onReact(msg.id, emoji); setShowContextMenu(false) }}
-                  className="text-2xl hover:scale-130 transition-transform active:scale-95 leading-none">
-                  {emoji}
-                </button>
-              ))}
+          <div className="fixed z-50" style={{ top: menuPos.top, left: menuPos.left, width: '320px' }}>
+
+            {/* Reaction bar */}
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl px-3 py-2.5 shadow-2xl mb-2">
+              <div className="flex flex-wrap gap-1">
+                {QUICK_REACTIONS.map(emoji => (
+                  <button key={emoji}
+                    onClick={() => { onReact(msg.id, emoji); setShowContextMenu(false) }}
+                    className="w-9 h-9 flex items-center justify-center text-xl hover:scale-125 transition-transform active:scale-95 hover:bg-gray-800 rounded-full">
+                    {emoji}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden shadow-2xl min-w-[180px]">
+
+            {/* Action menu */}
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden shadow-2xl">
               <button onClick={() => { onReply(msg); setShowContextMenu(false) }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-gray-800 border-b border-gray-800">
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-gray-800 border-b border-gray-800 transition-all">
                 <span>↩</span> Reply
               </button>
               <button onClick={() => { navigator.clipboard.writeText(msg.text || ''); onCopy(); setShowContextMenu(false) }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-gray-800 border-b border-gray-800">
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-gray-800 border-b border-gray-800 transition-all">
                 <span>📋</span> Copy
               </button>
               <button onClick={() => setShowContextMenu(false)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-gray-800 border-b border-gray-800">
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-gray-800 border-b border-gray-800 transition-all">
                 <span>↗️</span> Forward
               </button>
               {isMine && (
                 <button onClick={() => { onUnsend(msg.id); setShowContextMenu(false) }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-gray-800">
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-gray-800 transition-all">
                   <span>🗑</span> Unsend
                 </button>
               )}
@@ -352,19 +348,28 @@ export default function Messages() {
   useEffect(() => {
     loadAll()
     const sub = supabase
-      .channel('realtime-messages-v2')
+      .channel('realtime-messages-v4')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
         const msg = payload.new
-        setAllMessages(prev => ({ ...prev, [msg.channel_id]: [...(prev[msg.channel_id] || []), msg] }))
+        setAllMessages(prev => ({
+          ...prev,
+          [msg.channel_id]: [...(prev[msg.channel_id] || []), msg]
+        }))
         if (msg.user_id !== user?.id) markRead(msg)
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
         const msg = payload.new
-        setAllMessages(prev => ({ ...prev, [msg.channel_id]: (prev[msg.channel_id] || []).map(m => m.id === msg.id ? msg : m) }))
+        setAllMessages(prev => ({
+          ...prev,
+          [msg.channel_id]: (prev[msg.channel_id] || []).map(m => m.id === msg.id ? msg : m)
+        }))
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, payload => {
         const msg = payload.old
-        setAllMessages(prev => ({ ...prev, [msg.channel_id]: (prev[msg.channel_id] || []).filter(m => m.id !== msg.id) }))
+        setAllMessages(prev => ({
+          ...prev,
+          [msg.channel_id]: (prev[msg.channel_id] || []).filter(m => m.id !== msg.id)
+        }))
       })
       .subscribe()
     return () => supabase.removeChannel(sub)
@@ -488,8 +493,10 @@ export default function Messages() {
         <div className="p-4 border-b border-gray-800">
           <div className="text-sm font-semibold text-white mb-3">Messages</div>
           <div className="relative">
-            <input className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 pl-8 outline-none placeholder-gray-600 border border-gray-700"
-              placeholder="Search conversations..." />
+            <input
+              className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 pl-8 outline-none placeholder-gray-600 border border-gray-700"
+              placeholder="Search conversations..."
+            />
             <span className="absolute left-2.5 top-2.5 text-gray-500 text-xs">🔍</span>
           </div>
         </div>
@@ -507,13 +514,19 @@ export default function Messages() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
-                    <div className={`text-sm truncate ${unread > 0 ? 'font-bold text-white' : 'font-medium text-gray-200'}`}>{ch.name}</div>
-                    {last && <div className="text-xs text-gray-500 flex-shrink-0 ml-1">
-                      {new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>}
+                    <div className={`text-sm truncate ${unread > 0 ? 'font-bold text-white' : 'font-medium text-gray-200'}`}>
+                      {ch.name}
+                    </div>
+                    {last && (
+                      <div className="text-xs text-gray-500 flex-shrink-0 ml-1">
+                        {new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
                   </div>
                   <div className={`text-xs truncate ${unread > 0 ? 'text-gray-300 font-medium' : 'text-gray-500'}`}>
-                    {last ? (last.gif_url ? '🎬 GIF' : last.image_url ? '📷 Photo' : last.text?.slice(0, 38) || '...') : 'No messages yet'}
+                    {last
+                      ? (last.gif_url ? '🎬 GIF' : last.image_url ? '📷 Photo' : last.text?.slice(0, 38) || '...')
+                      : 'No messages yet'}
                   </div>
                 </div>
                 {unread > 0 && (
@@ -532,7 +545,7 @@ export default function Messages() {
 
         {copyToast && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-4 py-2 rounded-full z-50 shadow-lg border border-gray-700">
-            ✓ Copied to clipboard
+            ✓ Copied
           </div>
         )}
 
@@ -545,9 +558,9 @@ export default function Messages() {
             <div className="text-sm font-semibold text-white">{current.name}</div>
             <div className="text-xs text-green-400">Active now</div>
           </div>
-          <button className="text-gray-400 hover:text-white text-xl px-2">📞</button>
-          <button className="text-gray-400 hover:text-white text-xl px-2">🔍</button>
-          <button className="text-gray-400 hover:text-white text-xl px-2">ℹ️</button>
+          <button className="text-gray-400 hover:text-white text-xl px-1.5 transition-all" title="Call">📞</button>
+          <button className="text-gray-400 hover:text-white text-xl px-1.5 transition-all" title="Search">🔍</button>
+          <button className="text-gray-400 hover:text-white text-xl px-1.5 transition-all" title="Info">ℹ️</button>
         </div>
 
         {/* Messages */}
@@ -556,9 +569,11 @@ export default function Messages() {
             <div className="text-center text-gray-600 text-sm mt-16">Loading messages...</div>
           ) : msgs.length === 0 ? (
             <div className="flex flex-col items-center justify-center mt-16 gap-3">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl ${current.color}`}>{current.icon}</div>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl ${current.color}`}>
+                {current.icon}
+              </div>
               <div className="text-white font-medium">{current.name}</div>
-              <div className="text-gray-500 text-sm">No messages yet. Say something!</div>
+              <div className="text-gray-500 text-sm text-center">No messages yet.<br />Say something!</div>
             </div>
           ) : (
             msgs.map((msg, idx) => {
@@ -584,14 +599,17 @@ export default function Messages() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Pickers */}
+        {/* Emoji / GIF pickers */}
         {(showEmojiPicker || showGifPicker) && (
           <div className="absolute bottom-20 left-4 z-50">
             {showEmojiPicker && (
               <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} />
             )}
             {showGifPicker && (
-              <GifPicker onSelect={url => send({ gif_url: url, text: '' })} onClose={() => setShowGifPicker(false)} />
+              <GifPicker
+                onSelect={url => send({ gif_url: url, text: '' })}
+                onClose={() => setShowGifPicker(false)}
+              />
             )}
           </div>
         )}
@@ -599,7 +617,7 @@ export default function Messages() {
         {/* Reply preview */}
         {replyingTo && (
           <div className="px-4 py-2 bg-gray-900 border-t border-gray-800 flex items-center gap-2 flex-shrink-0">
-            <div className="w-1 h-8 bg-yellow-400 rounded-full flex-shrink-0"></div>
+            <div className="w-1 h-8 bg-yellow-400 rounded-full flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-xs text-yellow-400 font-medium">{replyingTo.sender}</div>
               <div className="text-xs text-gray-400 truncate">{replyingTo.text?.slice(0, 60) || '📷 Media'}</div>
@@ -608,7 +626,7 @@ export default function Messages() {
           </div>
         )}
 
-        {/* Input */}
+        {/* Input bar */}
         <div className="px-3 py-3 border-t border-gray-800 bg-gray-900 flex-shrink-0">
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
             onChange={e => e.target.files[0] && uploadFile(e.target.files[0], 'image')} />
@@ -617,30 +635,38 @@ export default function Messages() {
 
           <div className="flex gap-2 items-end">
             <div className="flex gap-1 flex-shrink-0">
-              <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false) }}
+              <button
+                onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false) }}
                 className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-all
                   ${showEmojiPicker ? 'bg-yellow-400/20 text-yellow-400' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}>
                 😊
               </button>
-              <button onClick={() => fileInputRef.current?.click()} disabled={uploadingMedia}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingMedia}
                 className="w-9 h-9 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 flex items-center justify-center text-lg transition-all">
                 {uploadingMedia ? <span className="text-xs animate-pulse text-yellow-400">⏳</span> : '📷'}
               </button>
-              <button onClick={() => videoInputRef.current?.click()} disabled={uploadingMedia}
+              <button
+                onClick={() => videoInputRef.current?.click()}
+                disabled={uploadingMedia}
                 className="w-9 h-9 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 flex items-center justify-center text-lg transition-all">
                 🎥
               </button>
-              <button onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false) }}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all
-                  ${showGifPicker ? 'bg-yellow-400/20 text-yellow-400 border border-yellow-400/40' : 'text-gray-400 hover:text-white hover:bg-gray-800 border border-gray-700'}`}>
+              <button
+                onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false) }}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all border
+                  ${showGifPicker
+                    ? 'bg-yellow-400/20 text-yellow-400 border-yellow-400/40'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800 border-gray-700'}`}>
                 GIF
               </button>
             </div>
 
-            <div className="flex-1 bg-gray-800 border border-gray-700 rounded-2xl px-4 py-2.5 flex items-center">
+            <div className="flex-1 bg-gray-800 border border-gray-700 rounded-2xl px-4 py-2.5">
               <input
                 ref={inputRef}
-                className="flex-1 bg-transparent text-white text-sm outline-none placeholder-gray-500"
+                className="w-full bg-transparent text-white text-sm outline-none placeholder-gray-500"
                 placeholder={`Message ${current.name}...`}
                 value={input}
                 onChange={e => setInput(e.target.value)}
