@@ -54,7 +54,7 @@ export default function Layout() {
       <aside className="w-52 min-w-[208px] bg-gray-900 border-r border-gray-800 flex flex-col overflow-y-auto">
 
         <div className="p-4 border-b border-gray-800">
-          <div className="text-yellow-400 font-bold text-xl tracking-tight">GreekLink</div>
+          <div className="text-yellow-400 font-bold text-xl tracking-tight">Touse</div>
           <div className="text-gray-500 text-xs mt-0.5 uppercase tracking-widest">Chapter OS</div>
         </div>
 

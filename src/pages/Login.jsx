@@ -38,8 +38,8 @@ export default function Login() {
       <div className="w-full max-w-sm">
 
         <div className="text-center mb-8">
-          <div className="text-3xl font-bold text-yellow-400 mb-1">GreekLink</div>
-          <div className="text-gray-500 text-sm uppercase tracking-widest">Chapter OS</div>
+          <div className="text-yellow-400 font-bold text-xl tracking-tight">Touse</div>
+          <div className="text-gray-500 text-xs mt-0.5 uppercase tracking-widest">Chapter OS</div>
         </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
