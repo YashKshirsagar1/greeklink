@@ -71,7 +71,7 @@ export default function Dues() {
   const unpaidCount = members.filter(m => !m.dues_paid).length
   const totalCollected = members.filter(m => m.dues_paid).reduce((s, m) => s + (m.dues_amount || globalDues), 0)
   const totalExpected = members.reduce((s, m) => s + (m.dues_amount || globalDues), 0)
-  const pct = totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0
+  const pct = members.length > 0 ? Math.round((paidCount / members.length) * 100) : 0
   const socialPaidCount = members.filter(m => m.social_paid).length
 
   const myBalance = myMember?.dues_paid ? 0 : (myMember?.dues_amount || globalDues)
