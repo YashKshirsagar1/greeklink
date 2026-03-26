@@ -81,7 +81,18 @@ export default function Dues() {
   }
 
   async function markSocialPaid(id, val) {
-    await supabase.from('members').update({ social_paid: val }).eq('id', id)
+    const { data, error } = await supabase
+      .from('members')
+      .update({ social_paid: val })
+      .eq('id', id)
+      .select()
+    
+    console.log('markSocialPaid result:', { data, error, id, val })
+    
+    if (error) {
+      alert('Error: ' + JSON.stringify(error))
+      return
+    }
     setMembers(prev => prev.map(m => m.id === id ? { ...m, social_paid: val } : m))
   }
 
