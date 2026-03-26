@@ -30,7 +30,12 @@ export default function Dues() {
   }
 
   async function fetchSettings() {
-    const { data } = await supabase.from('chapter_settings').select('*').eq('id', 1).single()
+    const { data, error } = await supabase
+      .from('chapter_settings')
+      .select('*')
+      .eq('id', 1)
+      .single()
+    if (error) { console.error('fetchSettings error:', error); return }
     if (data) {
       setGlobalDues(data.dues_amount ?? 0)
       setGlobalSocial(data.social_amount ?? 0)
@@ -42,7 +47,11 @@ export default function Dues() {
   }
 
   async function fetchMembers() {
-    const { data } = await supabase.from('members').select('*').order('created_at')
+    const { data, error } = await supabase
+      .from('members')
+      .select('*')
+      .order('created_at')
+    if (error) { console.error('fetchMembers error:', error); return }
     setMembers(data || [])
     const me = (data || []).find(m => m.user_id === user?.id)
     setMyMember(me)
@@ -62,11 +71,20 @@ export default function Dues() {
   }
 
   async function saveSettings() {
-    const { error: e1 } = await supabase.from('chapter_settings').upsert({
-      id: 1, dues_amount: editDues, social_amount: editSocial, due_date: editDueDate
-    })
-    if (e1) { alert('Error: ' + e1.message); return }
-    await supabase.from('members').update({ dues_amount: editDues })
+    const { error: e1 } = await supabase
+      .from('chapter_settings')
+      .upsert({ id: 1, dues_amount: editDues, social_amount: editSocial, due_date: editDueDate })
+    if (e1) { alert('Settings error: ' + e1.message); return }
+
+    const ids = members.map(m => m.id)
+    if (ids.length > 0) {
+      const { error: e2 } = await supabase
+        .from('members')
+        .update({ dues_amount: editDues })
+        .in('id', ids)
+      if (e2) { alert('Members error: ' + e2.message); return }
+    }
+
     setGlobalDues(editDues)
     setGlobalSocial(editSocial)
     setGlobalDueDate(editDueDate)
@@ -76,40 +94,53 @@ export default function Dues() {
   }
 
   async function markDuesPaid(id, val) {
-    await supabase.from('members').update({ dues_paid: val }).eq('id', id)
+    const { error } = await supabase
+      .from('members')
+      .update({ dues_paid: val })
+      .eq('id', id)
+    if (error) { console.error('markDuesPaid error:', error); alert('Error: ' + error.message); return }
     setMembers(prev => prev.map(m => m.id === id ? { ...m, dues_paid: val } : m))
   }
 
   async function markSocialPaid(id, val) {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('members')
       .update({ social_paid: val })
       .eq('id', id)
-      .select()
-    
-    console.log('markSocialPaid result:', { data, error, id, val })
-    
-    if (error) {
-      alert('Error: ' + JSON.stringify(error))
-      return
-    }
+    if (error) { console.error('markSocialPaid error:', error); alert('Error: ' + error.message); return }
     setMembers(prev => prev.map(m => m.id === id ? { ...m, social_paid: val } : m))
   }
 
   async function markAllDues(val) {
-    await supabase.from('members').update({ dues_paid: val })
+    const ids = members.map(m => m.id)
+    if (ids.length === 0) return
+    const { error } = await supabase
+      .from('members')
+      .update({ dues_paid: val })
+      .in('id', ids)
+    if (error) { alert('Error: ' + error.message); return }
     setMembers(prev => prev.map(m => ({ ...m, dues_paid: val })))
     toast(val ? '✓ All dues marked paid' : '✓ All dues reset')
   }
 
   async function markAllSocial(val) {
-    await supabase.from('members').update({ social_paid: val })
+    const ids = members.map(m => m.id)
+    if (ids.length === 0) return
+    const { error } = await supabase
+      .from('members')
+      .update({ social_paid: val })
+      .in('id', ids)
+    if (error) { alert('Error: ' + error.message); return }
     setMembers(prev => prev.map(m => ({ ...m, social_paid: val })))
     toast(val ? '✓ All social fees marked paid' : '✓ All social fees reset')
   }
 
   async function updateMemberAmount(id, amount) {
-    await supabase.from('members').update({ dues_amount: amount }).eq('id', id)
+    const { error } = await supabase
+      .from('members')
+      .update({ dues_amount: amount })
+      .eq('id', id)
+    if (error) { console.error('updateMemberAmount error:', error); return }
     setMembers(prev => prev.map(m => m.id === id ? { ...m, dues_amount: amount } : m))
   }
 
@@ -120,7 +151,6 @@ export default function Dues() {
     toast('✓ Payment recorded!')
   }
 
-  // Computed stats
   const total = members.length
   const duesPaid = members.filter(m => m.dues_paid).length
   const duesUnpaid = total - duesPaid
@@ -144,12 +174,11 @@ export default function Dues() {
     <div className="p-6">
 
       {successMsg && (
-        <div className="fixed top-6 right-6 bg-green-500 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-xl z-50 flex items-center gap-2">
-          <span>✓</span> {successMsg}
+        <div className="fixed top-6 right-6 bg-green-500 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-xl z-50">
+          {successMsg}
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white mb-1">Dues & Payments</h1>
@@ -157,7 +186,7 @@ export default function Dues() {
         </div>
         {isAdmin && (
           <button onClick={openAdmin}
-            className="px-4 py-2 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-sm font-medium rounded-xl hover:bg-yellow-400/20 transition-all flex items-center gap-2">
+            className="px-4 py-2 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-sm font-medium rounded-xl hover:bg-yellow-400/20 transition-all">
             ⚙️ Admin Settings
           </button>
         )}
@@ -170,19 +199,17 @@ export default function Dues() {
             <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
               <div>
                 <div className="text-base font-bold text-white">Admin — Dues Settings</div>
-                <div className="text-xs text-gray-500 mt-0.5">All changes save to database instantly</div>
+                <div className="text-xs text-gray-500 mt-0.5">Changes save to database and persist on reload</div>
               </div>
               <button onClick={() => setShowAdminModal(false)} className="text-gray-500 hover:text-white text-xl">✕</button>
             </div>
 
             <div className="p-6 overflow-y-auto" style={{ maxHeight: '70vh' }}>
-
-              {/* Amounts */}
               <div className="grid grid-cols-2 gap-3 mb-5">
                 <div>
                   <label className="text-xs text-gray-400 mb-1.5 block font-medium">Dues amount ($)</label>
                   <input type="number" min="0"
-                    className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2.5 border border-gray-700 outline-none focus:border-yellow-400/60 transition-all"
+                    className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2.5 border border-gray-700 outline-none focus:border-yellow-400/60"
                     value={editDues}
                     onChange={e => setEditDues(Number(e.target.value))}
                   />
@@ -190,7 +217,7 @@ export default function Dues() {
                 <div>
                   <label className="text-xs text-gray-400 mb-1.5 block font-medium">Social fee ($)</label>
                   <input type="number" min="0"
-                    className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2.5 border border-gray-700 outline-none focus:border-yellow-400/60 transition-all"
+                    className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2.5 border border-gray-700 outline-none focus:border-yellow-400/60"
                     value={editSocial}
                     onChange={e => setEditSocial(Number(e.target.value))}
                   />
@@ -200,37 +227,35 @@ export default function Dues() {
               <div className="mb-5">
                 <label className="text-xs text-gray-400 mb-1.5 block font-medium">Due date</label>
                 <input type="text"
-                  className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2.5 border border-gray-700 outline-none focus:border-yellow-400/60 transition-all"
+                  className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2.5 border border-gray-700 outline-none focus:border-yellow-400/60"
                   value={editDueDate}
                   onChange={e => setEditDueDate(e.target.value)}
                   placeholder="e.g. March 31"
                 />
               </div>
 
-              {/* Bulk actions */}
               <div className="mb-5">
                 <div className="text-xs text-gray-400 font-medium mb-2">Bulk actions</div>
                 <div className="grid grid-cols-2 gap-2">
                   <button onClick={() => markAllDues(true)}
-                    className="flex items-center justify-center gap-1.5 py-2.5 bg-green-400/10 border border-green-400/20 text-green-400 text-xs font-medium rounded-xl hover:bg-green-400/20 transition-all">
+                    className="py-2.5 bg-green-400/10 border border-green-400/20 text-green-400 text-xs font-medium rounded-xl hover:bg-green-400/20 transition-all">
                     ✓ Mark all dues paid
                   </button>
                   <button onClick={() => markAllSocial(true)}
-                    className="flex items-center justify-center gap-1.5 py-2.5 bg-blue-400/10 border border-blue-400/20 text-blue-400 text-xs font-medium rounded-xl hover:bg-blue-400/20 transition-all">
+                    className="py-2.5 bg-blue-400/10 border border-blue-400/20 text-blue-400 text-xs font-medium rounded-xl hover:bg-blue-400/20 transition-all">
                     ✓ Mark all social paid
                   </button>
                   <button onClick={() => markAllDues(false)}
-                    className="flex items-center justify-center gap-1.5 py-2.5 bg-red-400/10 border border-red-400/20 text-red-400 text-xs font-medium rounded-xl hover:bg-red-400/20 transition-all">
+                    className="py-2.5 bg-red-400/10 border border-red-400/20 text-red-400 text-xs font-medium rounded-xl hover:bg-red-400/20 transition-all">
                     ✗ Reset all dues
                   </button>
                   <button onClick={() => markAllSocial(false)}
-                    className="flex items-center justify-center gap-1.5 py-2.5 bg-red-400/10 border border-red-400/20 text-red-400 text-xs font-medium rounded-xl hover:bg-red-400/20 transition-all">
+                    className="py-2.5 bg-red-400/10 border border-red-400/20 text-red-400 text-xs font-medium rounded-xl hover:bg-red-400/20 transition-all">
                     ✗ Reset all social
                   </button>
                 </div>
               </div>
 
-              {/* Per member */}
               <div>
                 <div className="text-xs text-gray-400 font-medium mb-2">Per-member amounts</div>
                 <div className="bg-gray-800 rounded-xl overflow-hidden">
@@ -243,47 +268,47 @@ export default function Dues() {
                         <div className="text-sm text-white font-medium">{m.name}</div>
                         <div className="flex gap-2 mt-0.5">
                           <span className={`text-xs ${m.dues_paid ? 'text-green-400' : 'text-red-400'}`}>
-                            {m.dues_paid ? '✓ Dues paid' : '✗ Dues unpaid'}
+                            {m.dues_paid ? '✓ Dues' : '✗ Dues'}
                           </span>
                           <span className={`text-xs ${m.social_paid ? 'text-green-400' : 'text-yellow-400'}`}>
-                            · {m.social_paid ? '✓ Social paid' : '✗ Social unpaid'}
+                            · {m.social_paid ? '✓ Social' : '✗ Social'}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <span className="text-xs text-gray-500">$</span>
                         <input type="number" min="0"
-                          className="w-20 bg-gray-700 text-white text-xs rounded-lg px-2 py-1.5 border border-gray-600 outline-none text-center focus:border-yellow-400/50"
+                          className="w-20 bg-gray-700 text-white text-xs rounded-lg px-2 py-1.5 border border-gray-600 outline-none text-center"
                           value={m.dues_amount ?? editDues}
                           onChange={e => updateMemberAmount(m.id, Number(e.target.value))}
                         />
                       </div>
                       <div className="flex gap-1">
-                        <button
-                          onClick={() => markDuesPaid(m.id, !m.dues_paid)}
-                          className={`text-xs px-2 py-1 rounded-lg border transition-all ${m.dues_paid ? 'text-gray-500 border-gray-700 hover:text-red-400 hover:border-red-400/30' : 'text-green-400 bg-green-400/10 border-green-400/20 hover:bg-green-400/20'}`}>
+                        <button onClick={() => markDuesPaid(m.id, !m.dues_paid)}
+                          className={`text-xs px-2 py-1 rounded-lg border transition-all
+                            ${m.dues_paid ? 'text-gray-500 border-gray-700 hover:text-red-400' : 'text-green-400 bg-green-400/10 border-green-400/20'}`}>
                           D
                         </button>
-                        <button
-                          onClick={() => markSocialPaid(m.id, !m.social_paid)}
-                          className={`text-xs px-2 py-1 rounded-lg border transition-all ${m.social_paid ? 'text-gray-500 border-gray-700 hover:text-red-400 hover:border-red-400/30' : 'text-blue-400 bg-blue-400/10 border-blue-400/20 hover:bg-blue-400/20'}`}>
+                        <button onClick={() => markSocialPaid(m.id, !m.social_paid)}
+                          className={`text-xs px-2 py-1 rounded-lg border transition-all
+                            ${m.social_paid ? 'text-gray-500 border-gray-700 hover:text-red-400' : 'text-blue-400 bg-blue-400/10 border-blue-400/20'}`}>
                           S
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="text-xs text-gray-600 mt-1.5">D = toggle dues · S = toggle social</div>
+                <div className="text-xs text-gray-600 mt-1.5">D = toggle dues · S = toggle social fee</div>
               </div>
             </div>
 
             <div className="px-6 py-4 border-t border-gray-800 flex gap-3">
               <button onClick={() => setShowAdminModal(false)}
-                className="flex-1 bg-gray-800 text-gray-300 border border-gray-700 rounded-xl py-2.5 text-sm hover:bg-gray-700 transition-all">
+                className="flex-1 bg-gray-800 text-gray-300 border border-gray-700 rounded-xl py-2.5 text-sm hover:bg-gray-700">
                 Cancel
               </button>
               <button onClick={saveSettings}
-                className="flex-1 bg-yellow-400 text-gray-900 font-bold rounded-xl py-2.5 text-sm hover:bg-yellow-300 transition-all">
+                className="flex-1 bg-yellow-400 text-gray-900 font-bold rounded-xl py-2.5 text-sm hover:bg-yellow-300">
                 Save & apply to all →
               </button>
             </div>
@@ -321,7 +346,7 @@ export default function Dues() {
         </div>
       )}
 
-      {/* My balance banner */}
+      {/* Balance banner */}
       <div className={`rounded-2xl p-5 mb-6 border ${myBalance > 0 ? 'bg-red-500/5 border-red-500/20' : 'bg-green-500/5 border-green-500/20'}`}>
         <div className="flex items-center justify-between">
           <div>
@@ -341,10 +366,10 @@ export default function Dues() {
           {myBalance > 0 && (
             <div className="flex flex-col gap-2 ml-6">
               <button onClick={() => setShowPayModal(true)}
-                className="bg-yellow-400 text-gray-900 font-bold px-8 py-3 rounded-xl text-sm hover:bg-yellow-300 transition-all whitespace-nowrap">
+                className="bg-yellow-400 text-gray-900 font-bold px-8 py-3 rounded-xl text-sm hover:bg-yellow-300 whitespace-nowrap">
                 Pay ${myBalance} now →
               </button>
-              <button className="bg-gray-800 text-gray-300 border border-gray-700 px-4 py-2 rounded-xl text-xs hover:bg-gray-700 transition-all text-center">
+              <button className="bg-gray-800 text-gray-300 border border-gray-700 px-4 py-2 rounded-xl text-xs hover:bg-gray-700 text-center">
                 Venmo @touse
               </button>
             </div>
@@ -363,19 +388,14 @@ export default function Dues() {
         ))}
       </div>
 
-      {/* Overview tab */}
       {tab === 'overview' && (
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-4">
-
-            {/* Dues progress */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <div className="text-sm font-semibold text-white">Spring dues</div>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {globalDues > 0 ? `$${globalDues} per member` : 'Amount not set yet'}
-                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">{globalDues > 0 ? `$${globalDues} per member` : 'Amount not set yet'}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-black text-yellow-400">{duesPct}%</div>
@@ -383,11 +403,8 @@ export default function Dues() {
                 </div>
               </div>
               <div className="bg-gray-800 rounded-full h-4 mb-4 overflow-hidden">
-                <div className="h-4 rounded-full bg-yellow-400 transition-all duration-700 relative"
-                  style={{ width: `${duesPct}%` }}>
-                  {duesPct > 15 && (
-                    <span className="absolute right-2 top-0 bottom-0 flex items-center text-xs font-bold text-gray-900">{duesPct}%</span>
-                  )}
+                <div className="h-4 rounded-full bg-yellow-400 transition-all duration-700 relative" style={{ width: `${duesPct}%` }}>
+                  {duesPct > 15 && <span className="absolute right-2 top-0 bottom-0 flex items-center text-xs font-bold text-gray-900">{duesPct}%</span>}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -406,14 +423,11 @@ export default function Dues() {
               </div>
             </div>
 
-            {/* Social progress */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <div className="text-sm font-semibold text-white">Social fee</div>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {globalSocial > 0 ? `$${globalSocial} per member` : 'Amount not set yet'}
-                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">{globalSocial > 0 ? `$${globalSocial} per member` : 'Amount not set yet'}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-black text-blue-400">{socialPct}%</div>
@@ -421,11 +435,8 @@ export default function Dues() {
                 </div>
               </div>
               <div className="bg-gray-800 rounded-full h-4 mb-4 overflow-hidden">
-                <div className="h-4 rounded-full bg-blue-400 transition-all duration-700 relative"
-                  style={{ width: `${socialPct}%` }}>
-                  {socialPct > 15 && (
-                    <span className="absolute right-2 top-0 bottom-0 flex items-center text-xs font-bold text-white">{socialPct}%</span>
-                  )}
+                <div className="h-4 rounded-full bg-blue-400 transition-all duration-700 relative" style={{ width: `${socialPct}%` }}>
+                  {socialPct > 15 && <span className="absolute right-2 top-0 bottom-0 flex items-center text-xs font-bold text-white">{socialPct}%</span>}
                 </div>
               </div>
               <div className="flex justify-between text-xs text-gray-500">
@@ -436,12 +447,11 @@ export default function Dues() {
           </div>
 
           <div className="flex flex-col gap-4">
-            {/* Overdue */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold text-white">Overdue members</div>
                 {isAdmin && duesUnpaid > 0 && (
-                  <button className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 px-2.5 py-1 rounded-lg hover:bg-red-400/20 transition-all">
+                  <button className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 px-2.5 py-1 rounded-lg hover:bg-red-400/20">
                     Send reminders
                   </button>
                 )}
@@ -463,7 +473,7 @@ export default function Dues() {
                     </div>
                     {isAdmin && (
                       <button onClick={() => markDuesPaid(m.id, true)}
-                        className="text-xs text-green-400 bg-green-400/10 border border-green-400/20 px-3 py-1.5 rounded-xl hover:bg-green-400/20 transition-all">
+                        className="text-xs text-green-400 bg-green-400/10 border border-green-400/20 px-3 py-1.5 rounded-xl hover:bg-green-400/20">
                         Mark paid
                       </button>
                     )}
@@ -472,7 +482,6 @@ export default function Dues() {
               )}
             </div>
 
-            {/* Chapter financials */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
               <div className="text-sm font-semibold text-white mb-3">Chapter financials</div>
               {[
@@ -491,7 +500,6 @@ export default function Dues() {
         </div>
       )}
 
-      {/* Members tab */}
       {tab === 'members' && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -499,9 +507,7 @@ export default function Dues() {
               {['all', 'unpaid', 'paid'].map(f => (
                 <button key={f} onClick={() => setFilter(f)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-medium capitalize transition-all
-                    ${filter === f
-                      ? 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/30'
-                      : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white'}`}>
+                    ${filter === f ? 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/30' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white'}`}>
                   {f === 'all' ? `All (${total})` : f === 'unpaid' ? `Unpaid (${duesUnpaid})` : `Paid (${duesPaid})`}
                 </button>
               ))}
@@ -509,11 +515,11 @@ export default function Dues() {
             {isAdmin && (
               <div className="flex gap-2">
                 <button onClick={() => markAllDues(true)}
-                  className="text-xs text-green-400 bg-green-400/10 border border-green-400/20 px-3 py-1.5 rounded-xl hover:bg-green-400/20 transition-all">
+                  className="text-xs text-green-400 bg-green-400/10 border border-green-400/20 px-3 py-1.5 rounded-xl hover:bg-green-400/20">
                   ✓ All dues paid
                 </button>
                 <button onClick={() => markAllSocial(true)}
-                  className="text-xs text-blue-400 bg-blue-400/10 border border-blue-400/20 px-3 py-1.5 rounded-xl hover:bg-blue-400/20 transition-all">
+                  className="text-xs text-blue-400 bg-blue-400/10 border border-blue-400/20 px-3 py-1.5 rounded-xl hover:bg-blue-400/20">
                   ✓ All social paid
                 </button>
               </div>
@@ -531,7 +537,7 @@ export default function Dues() {
             {filtered.length === 0 ? (
               <div className="text-center py-8 text-sm text-gray-500">No members in this category</div>
             ) : filtered.map(m => (
-              <div key={m.id} className="grid grid-cols-12 px-4 py-3.5 border-b border-gray-800 last:border-0 items-center hover:bg-gray-800/30 transition-all">
+              <div key={m.id} className="grid grid-cols-12 px-4 py-3.5 border-b border-gray-800 last:border-0 items-center hover:bg-gray-800/30">
                 <div className="col-span-4 flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${m.color || 'bg-gray-700 text-gray-300'}`}>
                     {m.initials}
@@ -553,14 +559,12 @@ export default function Dues() {
                   )}
                 </div>
                 <div className="col-span-2 text-center">
-                  <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium
-                    ${m.dues_paid ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'}`}>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${m.dues_paid ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'}`}>
                     {m.dues_paid ? '✓ Paid' : '✗ Unpaid'}
                   </span>
                 </div>
                 <div className="col-span-2 text-center">
-                  <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium
-                    ${m.social_paid ? 'bg-green-400/10 text-green-400' : 'bg-yellow-400/10 text-yellow-400'}`}>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${m.social_paid ? 'bg-green-400/10 text-green-400' : 'bg-yellow-400/10 text-yellow-400'}`}>
                     {m.social_paid ? '✓ Paid' : '✗ Unpaid'}
                   </span>
                 </div>
@@ -568,31 +572,23 @@ export default function Dues() {
                   {isAdmin ? (
                     <>
                       <button onClick={() => markDuesPaid(m.id, !m.dues_paid)}
-                        title={m.dues_paid ? 'Undo dues' : 'Mark dues paid'}
                         className={`text-xs px-2 py-1.5 rounded-lg border transition-all
-                          ${m.dues_paid
-                            ? 'text-gray-500 border-gray-700 hover:text-red-400 hover:border-red-400/30'
-                            : 'text-green-400 bg-green-400/10 border-green-400/20 hover:bg-green-400/20'}`}>
-                        {m.dues_paid ? 'D ✕' : 'D ✓'}
+                          ${m.dues_paid ? 'text-gray-500 border-gray-700 hover:text-red-400' : 'text-green-400 bg-green-400/10 border-green-400/20 hover:bg-green-400/20'}`}>
+                        {m.dues_paid ? 'D✕' : 'D✓'}
                       </button>
                       <button onClick={() => markSocialPaid(m.id, !m.social_paid)}
-                        title={m.social_paid ? 'Undo social' : 'Mark social paid'}
                         className={`text-xs px-2 py-1.5 rounded-lg border transition-all
-                          ${m.social_paid
-                            ? 'text-gray-500 border-gray-700 hover:text-red-400 hover:border-red-400/30'
-                            : 'text-blue-400 bg-blue-400/10 border-blue-400/20 hover:bg-blue-400/20'}`}>
-                        {m.social_paid ? 'S ✕' : 'S ✓'}
+                          ${m.social_paid ? 'text-gray-500 border-gray-700 hover:text-red-400' : 'text-blue-400 bg-blue-400/10 border-blue-400/20 hover:bg-blue-400/20'}`}>
+                        {m.social_paid ? 'S✕' : 'S✓'}
                       </button>
                     </>
                   ) : (
                     !m.dues_paid && m.user_id === user?.id ? (
                       <button onClick={() => setShowPayModal(true)}
-                        className="text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-3 py-1.5 rounded-xl hover:bg-yellow-400/20 transition-all">
+                        className="text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-3 py-1.5 rounded-xl hover:bg-yellow-400/20">
                         Pay now
                       </button>
-                    ) : (
-                      <span className="text-xs text-gray-600">—</span>
-                    )
+                    ) : <span className="text-xs text-gray-600">—</span>
                   )}
                 </div>
               </div>
@@ -601,7 +597,6 @@ export default function Dues() {
         </div>
       )}
 
-      {/* History tab */}
       {tab === 'history' && (
         <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
           <div className="grid grid-cols-4 px-4 py-3 border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
@@ -616,9 +611,9 @@ export default function Dues() {
             </div>
           ) : (
             members.filter(m => m.dues_paid || m.social_paid).map(m => (
-              <div key={m.id} className="grid grid-cols-4 px-4 py-3.5 border-b border-gray-800 last:border-0 items-center hover:bg-gray-800/20 transition-all">
+              <div key={m.id} className="grid grid-cols-4 px-4 py-3.5 border-b border-gray-800 last:border-0 items-center hover:bg-gray-800/20">
                 <div className="col-span-2 flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${m.color || 'bg-gray-700 text-gray-300'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${m.color || 'bg-gray-700 text-gray-300'}`}>
                     {m.initials}
                   </div>
                   <div>
@@ -629,10 +624,8 @@ export default function Dues() {
                 <div className="text-sm text-gray-400">
                   {m.dues_paid && m.social_paid ? 'Dues + Social' : m.dues_paid ? 'Spring dues' : 'Social fee'}
                 </div>
-                <div className="text-right">
-                  <span className="text-sm font-bold text-green-400">
-                    +${((m.dues_paid ? (m.dues_amount ?? globalDues) : 0) + (m.social_paid ? globalSocial : 0)).toLocaleString()}
-                  </span>
+                <div className="text-right text-sm font-bold text-green-400">
+                  +${((m.dues_paid ? (m.dues_amount ?? globalDues) : 0) + (m.social_paid ? globalSocial : 0)).toLocaleString()}
                 </div>
               </div>
             ))
