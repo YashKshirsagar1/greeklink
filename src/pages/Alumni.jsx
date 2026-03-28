@@ -131,10 +131,6 @@ export default function Alumni() {
           <p className="text-gray-400 text-sm">{alumni.length} alumni registered</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowDonate(true)}
-            className="bg-gray-800 text-gray-300 border border-gray-700 px-4 py-2 rounded-xl text-sm hover:text-white transition-all">
-            💰 Donate to chapter
-          </button>
           <button onClick={() => setShowAddAlumni(true)}
             className="bg-yellow-400 text-gray-900 font-bold px-4 py-2 rounded-xl text-sm hover:bg-yellow-300 transition-all">
             + Add alumni
@@ -615,10 +611,6 @@ export default function Alumni() {
                 No campaigns yet. Contact your alumni coordinator to set one up.
               </div>
             </div>
-            <button onClick={() => setShowDonate(true)}
-              className="w-full bg-yellow-400 text-gray-900 font-bold rounded-xl py-3 text-sm hover:bg-yellow-300 transition-all">
-              💰 Make a donation →
-            </button>
           </div>
 
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
